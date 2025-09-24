@@ -19,35 +19,55 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build, Push & Scan app1
-        if: contains(github.event.head_commit.modified, 'Dockerfile1')
+      # Check and build Dockerfile1
+      - name: Build, Push & Scan Dockerfile1
+        id: docker1
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/app1:latest
-          docker build -f Dockerfile1 -t $IMAGE .
-          docker push $IMAGE
-          docker run aquasec/trivy image --no-progress -f table -o trivy-app1.txt $IMAGE
+          if git diff --name-only HEAD~1 | grep -q 'Dockerfile1'; then
+            echo "Dockerfile1 changed, building..."
+            IMAGE=ghcr.io/${{ github.repository_owner }}/app1:latest
+            docker build -f Dockerfile1 -t $IMAGE .
+            docker push $IMAGE
+            docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app1.txt $IMAGE
+          else
+            echo "Dockerfile1 not changed, skipping."
+          fi
 
-      - name: Build, Push & Scan app2
-        if: contains(github.event.head_commit.modified, 'Dockerfile2')
+      # Check and build Dockerfile2
+      - name: Build, Push & Scan Dockerfile2
+        id: docker2
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/app2:latest
-          docker build -f Dockerfile2 -t $IMAGE .
-          docker push $IMAGE
-          docker run aquasec/trivy image --no-progress -f table -o trivy-app2.txt $IMAGE
+          if git diff --name-only HEAD~1 | grep -q 'Dockerfile2'; then
+            echo "Dockerfile2 changed, building..."
+            IMAGE=ghcr.io/${{ github.repository_owner }}/app2:latest
+            docker build -f Dockerfile2 -t $IMAGE .
+            docker push $IMAGE
+            docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app2.txt $IMAGE
+          else
+            echo "Dockerfile2 not changed, skipping."
+          fi
 
-      - name: Build, Push & Scan app3
-        if: contains(github.event.head_commit.modified, 'Dockerfile3')
+      # Check and build Dockerfile3
+      - name: Build, Push & Scan Dockerfile3
+        id: docker3
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/app3:latest
-          docker build -f Dockerfile3 -t $IMAGE .
-          docker push $IMAGE
-          docker run aquasec/trivy image --no-progress -f table -o trivy-app3.txt $IMAGE
+          if git diff --name-only HEAD~1 | grep -q 'Dockerfile3'; then
+            echo "Dockerfile3 changed, building..."
+            IMAGE=ghcr.io/${{ github.repository_owner }}/app3:latest
+            docker build -f Dockerfile3 -t $IMAGE .
+            docker push $IMAGE
+            docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app3.txt $IMAGE
+          else
+            echo "Dockerfile3 not changed, skipping."
+          fi
 
+      # Upload all Trivy reports
       - name: Upload Trivy Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-reports
           path: |
             trivy-app1.txt
             trivy-app2.txt
             trivy-app3.txt
+
