@@ -72,4 +72,5 @@ jobs:
             trivy-app1.txt
             trivy-app2.txt
             trivy-app3.txt
+        continue-on-error: true
 
