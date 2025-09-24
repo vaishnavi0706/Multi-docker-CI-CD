@@ -1,4 +1,5 @@
 FROM nginx:alpine
+#to trigger & push
 #dockerfile3 nginx
 WORKDIR /usr/share/nginx/html
 COPY index.html .
