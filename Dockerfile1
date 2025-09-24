@@ -1,4 +1,4 @@
-# small test to trigger workflow
+# small test to trigger workflow run
 FROM python:3.10-slim
 
 WORKDIR /app
