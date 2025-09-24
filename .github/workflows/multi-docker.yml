@@ -1,0 +1,53 @@
+name: Multi Docker Build & Scan
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Dockerfile.app1"
+      - "Dockerfile.app2"
+      - "Dockerfile.app3"
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build, Push & Scan app1
+        if: contains(github.event.head_commit.modified, 'Dockerfile.app1')
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/app1:latest
+          docker build -f Dockerfile.app1 -t $IMAGE .
+          docker push $IMAGE
+          docker run aquasec/trivy image --no-progress -f table -o trivy-app1.txt $IMAGE
+
+      - name: Build, Push & Scan app2
+        if: contains(github.event.head_commit.modified, 'Dockerfile.app2')
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/app2:latest
+          docker build -f Dockerfile.app2 -t $IMAGE .
+          docker push $IMAGE
+          docker run aquasec/trivy image --no-progress -f table -o trivy-app2.txt $IMAGE
+
+      - name: Build, Push & Scan app3
+        if: contains(github.event.head_commit.modified, 'Dockerfile.app3')
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/app3:latest
+          docker build -f Dockerfile.app3 -t $IMAGE .
+          docker push $IMAGE
+          docker run aquasec/trivy image --no-progress -f table -o trivy-app3.txt $IMAGE
+
+      - name: Upload Trivy Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-reports
+          path: |
+            trivy-app1.txt
+            trivy-app2.txt
+            trivy-app3.txt
