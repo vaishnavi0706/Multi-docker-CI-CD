@@ -2,7 +2,7 @@ name: Multi Docker GHCR with Trivy scan
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "Dockerfile1"
       - "Dockerfile2"
@@ -22,39 +22,60 @@ jobs:
             image: app3
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      # 1️⃣ Checkout the repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # Needed for git diff
 
-      - name: Check if file changed
+      # 2️⃣ Check if Dockerfile changed
+      - name: Detect file changes
         id: changed
         run: |
+          echo "Checking if ${{ matrix.file }} changed..."
           if git diff --name-only HEAD~1 | grep -q "${{ matrix.file }}"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Login to GHCR
+      # 3️⃣ Login to GHCR
+      - name: Log in to GitHub Container Registry
         if: steps.changed.outputs.changed == 'true'
-        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: |
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build & Push image
+      # 4️⃣ Build & Push Docker image
+      - name: Build & Push Docker image
         if: steps.changed.outputs.changed == 'true'
         run: |
           IMAGE=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
+          echo "Building and pushing $IMAGE..."
           docker build -f ${{ matrix.file }} -t $IMAGE .
           docker push $IMAGE
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
-      - name: Trivy scan
+      # 5️⃣ Trivy scan
+      - name: Run Trivy scan
         if: steps.changed.outputs.changed == 'true'
         run: |
+          IMAGE=$IMAGE
+          echo "Scanning $IMAGE with Trivy..."
+          # Generate TXT report
           trivy image --format table -o trivy-${{ matrix.image }}.txt $IMAGE
+          # Generate JSON report (optional)
+          trivy image --format json -o trivy-${{ matrix.image }}.json $IMAGE
 
-      - name: Upload report
+      # 6️⃣ Upload Trivy reports as artifacts
+      - name: Upload Trivy reports
         if: steps.changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: trivy-${{ matrix.image }}
-          path: trivy-${{ matrix.image }}.txt
+          path: |
+            trivy-${{ matrix.image }}.txt
+            trivy-${{ matrix.image }}.json
+
+  
+
 
