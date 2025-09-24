@@ -1,4 +1,4 @@
-name: Multi Docker GHCR with Trivy scans
+name: Multi Docker GHCR with Trivy scan
 
 on:
   push:
@@ -43,11 +43,11 @@ jobs:
       - name: Build & Push Docker image
         if: steps.changed.outputs.changed == 'true'
         uses: docker/build-push-action@v6
-        run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
-          docker build -f ${{ matrix.file }} -t $IMAGE .
-          docker push $IMAGE
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
 
       - name: Run Trivy scan
         if: steps.changed.outputs.changed == 'true'
@@ -67,6 +67,7 @@ jobs:
         with:
           name: trivy-${{ matrix.image }}
           path: trivy-${{ matrix.image }}.txt
+
 
 
   
