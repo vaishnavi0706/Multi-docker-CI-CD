@@ -1,73 +1,53 @@
-name: Multi Docker Build & Scan
-# Force GitHub to reload workflow v4
+name: Multi Docker GHCR with Trivy
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "Dockerfile1"
       - "Dockerfile2"
       - "Dockerfile3"
 
 jobs:
-  docker:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file: [Dockerfile1, Dockerfile2, Dockerfile3]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Log in to GHCR
+      - name: Check if file changed
+        id: changed
+        run: |
+          if git diff --name-only HEAD~1 | grep -q "${{ matrix.file }}"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login to GHCR
+        if: steps.changed.outputs.changed == 'true'
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      # Build, push & scan Dockerfile1
-      - name: Build, Push & Scan app1
-        id: docker1
+      - name: Build & Push image
+        if: steps.changed.outputs.changed == 'true'
         run: |
-          if git diff --name-only HEAD~1 | grep -q 'Dockerfile1'; then
-            echo "Dockerfile1 changed, building..."
-            IMAGE=ghcr.io/vaishnavi0706/app1:latest
-            docker build -f Dockerfile1 -t $IMAGE .
-            docker push $IMAGE
-            docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app1.txt $IMAGE
-          else
-            echo "Dockerfile1 not changed, skipping."
-          fi
+          IMAGE=ghcr.io/${{ github.repository_owner }}/${{ matrix.file }}:latest
+          docker build -f ${{ matrix.file }} -t $IMAGE .
+          docker push $IMAGE
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
-      # Build, push & scan Dockerfile2
-      - name: Build, Push & Scan app2
-        id: docker2
+      - name: Trivy scan
+        if: steps.changed.outputs.changed == 'true'
         run: |
-          if git diff --name-only HEAD~1 | grep -q 'Dockerfile2'; then
-            echo "Dockerfile2 changed, building..."
-            IMAGE=ghcr.io/vaishnavi0706/app2:latest
-            docker build -f Dockerfile2 -t $IMAGE .
-            docker push $IMAGE
-            docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app2.txt $IMAGE
-          else
-            echo "Dockerfile2 not changed, skipping."
-          fi
+          trivy image --format table -o trivy-${{ matrix.file }}.txt $IMAGE
 
-      # Build, push & scan Dockerfile3
-      - name: Build, Push & Scan app3
-        id: docker3
-        run: |
-          if git diff --name-only HEAD~1 | grep -q 'Dockerfile3'; then
-            echo "Dockerfile3 changed, building..."
-            IMAGE=ghcr.io/vaishnavi0706/app3:latest
-            docker build -f Dockerfile3 -t $IMAGE .
-            docker push $IMAGE
-            docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app3.txt $IMAGE
-          else
-            echo "Dockerfile3 not changed, skipping."
-          fi
-
-      # Upload only existing Trivy reports
-      - name: Upload Trivy Reports
+      - name: Upload report
+        if: steps.changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-reports
-          path: |
-            trivy-app1.txt
-            trivy-app2.txt
-            trivy-app3.txt
+          name: trivy-${{ matrix.file }}
+          path: trivy-${{ matrix.file }}.txt
