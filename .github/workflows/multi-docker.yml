@@ -26,7 +26,7 @@ jobs:
         run: |
           if git diff --name-only HEAD~1 | grep -q 'Dockerfile1'; then
             echo "Dockerfile1 changed, building..."
-            IMAGE=ghcr.io/${{ github.repository_owner }}/app1:latest
+            IMAGE=ghcr.io/${{ vaishnavi0706 }}/app1:latest
             docker build -f Dockerfile1 -t $IMAGE .
             docker push $IMAGE
             docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app1.txt $IMAGE
@@ -40,7 +40,7 @@ jobs:
         run: |
           if git diff --name-only HEAD~1 | grep -q 'Dockerfile2'; then
             echo "Dockerfile2 changed, building..."
-            IMAGE=ghcr.io/${{ github.repository_owner }}/app2:latest
+            IMAGE=ghcr.io/${{ vaishnavi0706  }}/app2:latest
             docker build -f Dockerfile2 -t $IMAGE .
             docker push $IMAGE
             docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app2.txt $IMAGE
@@ -54,7 +54,7 @@ jobs:
         run: |
           if git diff --name-only HEAD~1 | grep -q 'Dockerfile3'; then
             echo "Dockerfile3 changed, building..."
-            IMAGE=ghcr.io/${{ github.repository_owner }}/app3:latest
+            IMAGE=ghcr.io/${{ vaishnavi0706  }}/app3:latest
             docker build -f Dockerfile3 -t $IMAGE .
             docker push $IMAGE
             docker run --rm aquasec/trivy image --no-progress -f table -o trivy-app3.txt $IMAGE
