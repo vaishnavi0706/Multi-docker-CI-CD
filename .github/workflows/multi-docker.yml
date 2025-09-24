@@ -1,4 +1,4 @@
-name: Multi Docker GHCR with Trivy scan
+name: Multi Docker GHCR with Trivy scans
 
 on:
   push:
