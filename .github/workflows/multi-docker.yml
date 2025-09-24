@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Trivy scan
         if: steps.changed.outputs.changed == 'true'
-        uses: aquasecurity/trivy-action@v3
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
           format: table
