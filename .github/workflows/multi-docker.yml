@@ -4,9 +4,9 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "Dockerfile.app1"
-      - "Dockerfile.app2"
-      - "Dockerfile.app3"
+      - "Dockerfile1"
+      - "Dockerfile2"
+      - "Dockerfile3"
 
 jobs:
   docker:
@@ -20,26 +20,26 @@ jobs:
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build, Push & Scan app1
-        if: contains(github.event.head_commit.modified, 'Dockerfile.app1')
+        if: contains(github.event.head_commit.modified, 'Dockerfile1')
         run: |
           IMAGE=ghcr.io/${{ github.repository_owner }}/app1:latest
-          docker build -f Dockerfile.app1 -t $IMAGE .
+          docker build -f Dockerfile1 -t $IMAGE .
           docker push $IMAGE
           docker run aquasec/trivy image --no-progress -f table -o trivy-app1.txt $IMAGE
 
       - name: Build, Push & Scan app2
-        if: contains(github.event.head_commit.modified, 'Dockerfile.app2')
+        if: contains(github.event.head_commit.modified, 'Dockerfile2')
         run: |
           IMAGE=ghcr.io/${{ github.repository_owner }}/app2:latest
-          docker build -f Dockerfile.app2 -t $IMAGE .
+          docker build -f Dockerfile2 -t $IMAGE .
           docker push $IMAGE
           docker run aquasec/trivy image --no-progress -f table -o trivy-app2.txt $IMAGE
 
       - name: Build, Push & Scan app3
-        if: contains(github.event.head_commit.modified, 'Dockerfile.app3')
+        if: contains(github.event.head_commit.modified, 'Dockerfile3')
         run: |
           IMAGE=ghcr.io/${{ github.repository_owner }}/app3:latest
-          docker build -f Dockerfile.app3 -t $IMAGE .
+          docker build -f Dockerfile3 -t $IMAGE .
           docker push $IMAGE
           docker run aquasec/trivy image --no-progress -f table -o trivy-app3.txt $IMAGE
 
