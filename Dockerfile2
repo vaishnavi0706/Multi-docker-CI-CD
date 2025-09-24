@@ -1,5 +1,5 @@
 FROM node:16-alpine
-#updated dockerfile2 to trigger
+#updated dockerfile2 to trigger & push
 
 WORKDIR /app
 COPY index.js /app/
