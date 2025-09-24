@@ -1,5 +1,5 @@
 name: Multi Docker Build & Scan
-# Force GitHub to reload workflow v4
+# Force GitHub to reload workflow 
 
 on:
   push:
