@@ -1,5 +1,5 @@
 FROM nginx:alpine
-#dockerfile3
+#dockerfile3 nginx
 WORKDIR /usr/share/nginx/html
 COPY index.html .
 
