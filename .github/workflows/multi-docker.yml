@@ -22,59 +22,51 @@ jobs:
             image: app3
 
     steps:
-      # 1️⃣ Checkout the repo
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 2  # Needed for git diff
+          fetch-depth: 2
 
-      # 2️⃣ Check if Dockerfile changed
       - name: Detect file changes
         id: changed
         run: |
-          echo "Checking if ${{ matrix.file }} changed..."
           if git diff --name-only HEAD~1 | grep -q "${{ matrix.file }}"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      # 3️⃣ Login to GHCR
       - name: Log in to GitHub Container Registry
         if: steps.changed.outputs.changed == 'true'
-        run: |
-          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      # 4️⃣ Build & Push Docker image
       - name: Build & Push Docker image
         if: steps.changed.outputs.changed == 'true'
         run: |
           IMAGE=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
-          echo "Building and pushing $IMAGE..."
           docker build -f ${{ matrix.file }} -t $IMAGE .
           docker push $IMAGE
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
-      # 5️⃣ Trivy scan
       - name: Run Trivy scan
         if: steps.changed.outputs.changed == 'true'
-        run: |
-          IMAGE=$IMAGE
-          echo "Scanning $IMAGE with Trivy..."
-          # Generate TXT report
-          trivy image --format table -o trivy-${{ matrix.image }}.txt $IMAGE
-          # Generate JSON report (optional)
-          trivy image --format json -o trivy-${{ matrix.image }}.json $IMAGE
+        uses: aquasecurity/trivy-action@v3
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
+          format: table
+          output: trivy-${{ matrix.image }}.txt
+          exit-code: 0
+          vuln-type: os,library
+          ignore-unfixed: false
+          severity: CRITICAL,HIGH,MEDIUM,LOW
 
-      # 6️⃣ Upload Trivy reports as artifacts
       - name: Upload Trivy reports
         if: steps.changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: trivy-${{ matrix.image }}
-          path: |
-            trivy-${{ matrix.image }}.txt
-            trivy-${{ matrix.image }}.json
+          path: trivy-${{ matrix.image }}.txt
+
 
   
 
